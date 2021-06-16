@@ -15,6 +15,7 @@
 // under the License.
 
 import ballerina/http;
+import ballerina/log;
 
 # Represents a Service listener endpoint.
 public class Listener {
@@ -24,43 +25,71 @@ public class Listener {
     private int port;
     private HttpService? httpService;
 
-    // todo HTTP config needs to be passed as optional parameter
-    # Invoked during the initialization of a `websubhub:Listener`. Either an `http:Listener` or a port number must be
-    # provided to initialize the listener.
+    # Initiliazes the `websubhub:Listener` instance.
+    # ```ballerina
+    # listener websubhub:Listener hubListenerEp = check new (9090);
+    # ```
     #
-    # + listenTo - An `http:Listener` or a port number to listen for the service
-    public isolated function init(int|http:Listener listenTo) returns error? {
-        if (listenTo is int) {
-            self.httpListener = check new(listenTo);
+    # + listenTo - Port number or an `http:Listener` instance
+    # + config - Custom `websubhub:ListenerConfiguration` to be provided to the underlying HTTP listener
+    # + return - The `websubhub:Listener` or an `error` if the initialization failed
+    public isolated function init(int|http:Listener listenTo, *ListenerConfiguration config) returns error? {
+        if listenTo is int {
+            self.httpListener = check new(listenTo, config);
         } else {
             self.httpListener = listenTo;
         }
+
         self.listenerConfig = self.httpListener.getConfig();
         self.port = self.httpListener.getPort();
         self.httpService = ();
     }
 
-    # Attaches the provided Service to the Listener.
-    #
-    # + s - The `websubhub:Service` object to attach
-    # + name - The path of the Service to be hosted
-    # + return - An `error`, if an error occurred during the service attaching process
-    public isolated function attach(Service s, string[]|string? name = ()) returns error? {
+    # Attaches the provided `websubhub:Service` to the `websubhub:Listener`.
+    # ```ballerina
+    # check hubListenerEp.attach('service, "/hub");
+    # ```
+    # 
+    # + 'service - The `websubhub:Service` object to attach
+    # + name - The path of the service to be hosted
+    # + return - An `error` if an error occurred during the service attaching process or else `()`
+    public isolated function attach(Service 'service, string[]|string? name = ()) returns error? {
+        if self.listenerConfig.secureSocket is () {
+            log:printWarn("HTTPS is recommended but using HTTP");
+        }
+
         string hubUrl = self.retrieveHubUrl(name);
-        // todo implement to retrieve hub-lease-seconds via annotation configuration
-        self.httpService = new(s, hubUrl, self.defaultHubLeaseSeconds);
-        checkpanic self.httpListener.attach(<HttpService> self.httpService, name);
+        ServiceConfiguration? configuration = retrieveServiceAnnotations('service);
+        HttpToWebsubhubAdaptor adaptor = check new ('service);
+        if configuration is ServiceConfiguration {
+            int leaseSeconds = configuration?.leaseSeconds is int ? <int>(configuration?.leaseSeconds) : self.defaultHubLeaseSeconds;
+            if configuration?.webHookConfig is ClientConfiguration {
+                self.httpService = new(adaptor, hubUrl, leaseSeconds, <ClientConfiguration>(configuration?.webHookConfig));
+            } else {
+                self.httpService = new(adaptor, hubUrl, leaseSeconds);
+            }
+        } else {
+            self.httpService = new(adaptor, hubUrl, self.defaultHubLeaseSeconds);
+        }
+        check self.httpListener.attach(<HttpService> self.httpService, name);
     }
 
+    # Retrieves the URL on which the `hub` is published.
+    # ```ballerina
+    # string hubUrl = retrieveHubUrl("/hub");
+    # ```
+    #
+    # + servicePath - Current service path
+    # + return - Callback URL, which should be used in the subscription request
     isolated function retrieveHubUrl(string[]|string? servicePath) returns string {
         string host = self.listenerConfig.host;
         string protocol = self.listenerConfig.secureSocket is () ? "http" : "https";
         
         string concatenatedServicePath = "";
         
-        if (servicePath is string) {
+        if servicePath is string {
             concatenatedServicePath += "/" + <string>servicePath;
-        } else if (servicePath is string[]) {
+        } else if servicePath is string[] {
             foreach var pathSegment in <string[]>servicePath {
                 concatenatedServicePath += "/" + pathSegment;
             }
@@ -69,32 +98,56 @@ public class Listener {
         return protocol + "://" + host + ":" + self.port.toString() + concatenatedServicePath;
     }
 
-    # Detaches the provided Service from the Listener.
-    #
-    # + s - The service to be detached
-    # + return - An `error`, if an error occurred during the service detaching process
+    # Detaches the provided `websubhub:Service` from the `websubhub:Listener`.
+    # ```ballerina
+    # check hubListenerEp.detach('service);
+    # ```
+    # 
+    # + s - The `websubhub:Service` object to be detached
+    # + return - An `error` if an error occurred during the service detaching process or else `()`
     public isolated function detach(Service s) returns error? {
-        checkpanic self.httpListener.detach(<HttpService> self.httpService);
+        check self.httpListener.detach(<HttpService> self.httpService);
     }
 
-    # Starts the attached Service.
-    #
-    # + return - An `error`, if an error occurred during the listener starting process
+    # Starts the registered service programmatically.
+    # ```ballerina
+    # check hubListenerEp.'start();
+    # ```
+    # 
+    # + return - An `error` if an error occurred during the listener-starting process or else `()`
     public isolated function 'start() returns error? {
-        checkpanic self.httpListener.'start();
+        check self.httpListener.'start();
     }
 
-    # Gracefully stops the hub listener. Already accepted requests will be served before the connection closure.
-    #
-    # + return - An `error`, if an error occurred during the listener stopping process
+    # Gracefully stops the hub listener. Already-accepted requests will be served before the connection closure.
+    # ```ballerina
+    # check hubListenerEp.gracefulStop();
+    # ```
+    # 
+    # + return - An `error` if an error occurred during the listener-stopping process
     public isolated function gracefulStop() returns error? {
         return self.httpListener.gracefulStop();
     }
 
     # Stops the service listener immediately. It is not implemented yet.
-    #
-    # + return - An `error`, if an error occurred during the listener stopping process
+    # ```ballerina
+    # check hubListenerEp.immediateStop();
+    # ```
+    # 
+    # + return - An `error` if an error occurred during the listener-stopping process or else `()`
     public isolated function immediateStop() returns error? {
         return self.httpListener.immediateStop();
     }
+}
+
+# Retrieves the `websubhub:ServiceConfiguration` annotation values.
+# ```ballerina
+# websubhub:ServiceConfiguration? config = retrieveServiceAnnotations('service);
+# ```
+# 
+# + serviceType - Current `websubhub:Service` object
+# + return - Provided `websubhub:ServiceConfiguration` or else `()`
+isolated function retrieveServiceAnnotations(Service serviceType) returns ServiceConfiguration? {
+    typedesc<any> serviceTypedesc = typeof serviceType;
+    return serviceTypedesc.@ServiceConfig;
 }

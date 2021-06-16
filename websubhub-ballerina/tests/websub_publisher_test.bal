@@ -17,67 +17,54 @@
 import ballerina/io;
 import ballerina/test;
 
-listener Listener testListener = new(9191);
+listener Listener testListener = new(9092);
 
 service /websubhub on testListener {
 
-    remote function onRegisterTopic(TopicRegistration message)
+    isolated remote function onRegisterTopic(TopicRegistration message)
                                 returns TopicRegistrationSuccess|TopicRegistrationError {
         if (message.topic == "test") {
-            TopicRegistrationSuccess successResult = {
-                body: <map<string>>{
-                       isSuccess: "true"
-                    }
-            };
-            return successResult;
+            return TOPIC_REGISTRATION_SUCCESS;
         } else {
-            return error TopicRegistrationError("Registration Failed!");
+            return TOPIC_REGISTRATION_ERROR;
         }
     }
 
-    remote function onDeregisterTopic(TopicDeregistration message)
+    isolated remote function onDeregisterTopic(TopicDeregistration message)
                         returns TopicDeregistrationSuccess|TopicDeregistrationError {
-
-        map<string> body = { isDeregisterSuccess: "true" };
-        TopicDeregistrationSuccess deregisterResult = {
-            body
-        };
         if (message.topic == "test") {
-            return deregisterResult;
+            return TOPIC_DEREGISTRATION_SUCCESS;
        } else {
-            return error TopicDeregistrationError("Topic Deregistration Failed!");
+            return TOPIC_DEREGISTRATION_ERROR;
         }
     }
 
-    remote function onUpdateMessage(UpdateMessage msg)
+    isolated remote function onUpdateMessage(UpdateMessage msg)
                returns Acknowledgement|UpdateMessageError {
-        Acknowledgement ack = {};
         if (msg.hubTopic == "test") {
-            return ack;
+            return ACKNOWLEDGEMENT;
         } else if (!(msg.content is ())) {
-            return ack;
+            return ACKNOWLEDGEMENT;
         } else {
-            return error UpdateMessageError("Error in accessing content");
+            return UPDATE_MESSAGE_ERROR;
         }
     }
     
-    remote function onSubscriptionIntentVerified(VerifiedSubscription msg) {
+    isolated remote function onSubscriptionIntentVerified(VerifiedSubscription msg) {
         io:println("Subscription Intent verified invoked!");
-        isIntentVerified = true;
     }
 
-    remote function onUnsubscriptionIntentVerified(VerifiedUnsubscription msg){
+    isolated remote function onUnsubscriptionIntentVerified(VerifiedUnsubscription msg){
         io:println("Unsubscription Intent verified invoked!");
     }
 }
 
-PublisherClient websubHubClientEP = checkpanic new ("http://localhost:9191/websubhub");
+PublisherClient websubHubClientEP = check new ("http://localhost:9092/websubhub");
 
 @test:Config{}
 public function testPublisherRegisterSuccess() {
     TopicRegistrationSuccess|TopicRegistrationError registrationResponse =
                     websubHubClientEP->registerTopic("test");
-
     if (registrationResponse is TopicRegistrationSuccess) {
         io:println(registrationResponse);
     } else {
@@ -89,7 +76,6 @@ public function testPublisherRegisterSuccess() {
 public function testPublisherRegisterFailure() {
     TopicRegistrationSuccess|TopicRegistrationError registrationResponse =
                     websubHubClientEP->registerTopic("test1");
-
     if (registrationResponse is TopicRegistrationError) {
         io:println(registrationResponse);
     } else {
@@ -101,7 +87,6 @@ public function testPublisherRegisterFailure() {
 public function testPublisherDeregisterSuccess() {
     TopicDeregistrationSuccess|TopicDeregistrationError deRegistrationResponse =
                     websubHubClientEP->deregisterTopic("test");
-
     if (deRegistrationResponse is TopicDeregistrationSuccess) {
         io:println(deRegistrationResponse);
     } else {
@@ -114,7 +99,6 @@ public function testPublisherDeregisterSuccess() {
 public function testPublisherDeregisterFailure() {
     TopicDeregistrationSuccess|TopicDeregistrationError deRegistrationResponse =
                     websubHubClientEP->deregisterTopic("test1");
-
     if (deRegistrationResponse is TopicDeregistrationError) {
         io:println(deRegistrationResponse);
     } else {
@@ -125,7 +109,6 @@ public function testPublisherDeregisterFailure() {
 @test:Config{}
 public function testPublisherNotifyEvenSuccess() {
     Acknowledgement|UpdateMessageError response = websubHubClientEP->notifyUpdate("test");
-
     if (response is Acknowledgement) {
         io:println(response);
     } else {
@@ -138,7 +121,6 @@ public function testPublisherNotifyEvenSuccess() {
 public function testPublisherPubishEventSuccess() {
     map<string> params = { event: "event"};
     Acknowledgement|UpdateMessageError response = websubHubClientEP->publishUpdate("test", params);
-
     if (response is Acknowledgement) {
         io:println(response);
     } else {

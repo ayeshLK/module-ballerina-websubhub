@@ -18,16 +18,13 @@ import ballerina/io;
 import ballerina/http;
 import ballerina/test;
 
-boolean isIntentVerified = false;
-boolean isValidationFailed = false;
-
-http:Client httpClient = checkpanic new("http://localhost:9090/websubhub");
+http:Client httpClient = check new("http://localhost:9090/websubhub");
 
 listener Listener functionWithArgumentsListener = new(9090);
 
 service /websubhub on functionWithArgumentsListener {
 
-    remote function onRegisterTopic(TopicRegistration message)
+    isolated remote function onRegisterTopic(TopicRegistration message)
                                 returns TopicRegistrationSuccess|TopicRegistrationError {
         if (message.topic == "test") {
             TopicRegistrationSuccess successResult = {
@@ -41,7 +38,7 @@ service /websubhub on functionWithArgumentsListener {
         }
     }
 
-    remote function onDeregisterTopic(TopicDeregistration message)
+    isolated remote function onDeregisterTopic(TopicDeregistration message)
                         returns TopicDeregistrationSuccess|TopicDeregistrationError {
 
         map<string> body = { isDeregisterSuccess: "true" };
@@ -55,7 +52,7 @@ service /websubhub on functionWithArgumentsListener {
         }
     }
 
-    remote function onUpdateMessage(UpdateMessage msg)
+    isolated remote function onUpdateMessage(UpdateMessage msg)
                returns Acknowledgement|UpdateMessageError {
         Acknowledgement ack = {};
         if (msg.hubTopic == "test") {
@@ -67,7 +64,7 @@ service /websubhub on functionWithArgumentsListener {
         }
     }
     
-    remote function onSubscription(Subscription msg)
+    isolated remote function onSubscription(Subscription msg)
                 returns SubscriptionAccepted|SubscriptionPermanentRedirect|SubscriptionTemporaryRedirect
                 |BadSubscriptionError|InternalSubscriptionError {
         SubscriptionAccepted successResult = {
@@ -84,7 +81,7 @@ service /websubhub on functionWithArgumentsListener {
         }
     }
 
-    remote function onSubscriptionValidation(Subscription msg)
+    isolated remote function onSubscriptionValidation(Subscription msg)
                 returns SubscriptionDeniedError? {
         if (msg.hubTopic == "test1") {
             return error SubscriptionDeniedError("Denied subscription for topic 'test1'");
@@ -92,12 +89,11 @@ service /websubhub on functionWithArgumentsListener {
         return ();
     }
 
-    remote function onSubscriptionIntentVerified(VerifiedSubscription msg) {
+    isolated remote function onSubscriptionIntentVerified(VerifiedSubscription msg) {
         io:println("Subscription Intent verified invoked!");
-        isIntentVerified = true;
     }
 
-    remote function onUnsubscription(Unsubscription msg)
+    isolated remote function onUnsubscription(Unsubscription msg)
                returns UnsubscriptionAccepted|BadUnsubscriptionError|InternalUnsubscriptionError {
         if (msg.hubTopic == "test" || msg.hubTopic == "test1" ) {
             UnsubscriptionAccepted successResult = {
@@ -111,7 +107,7 @@ service /websubhub on functionWithArgumentsListener {
         }
     }
 
-    remote function onUnsubscriptionValidation(Unsubscription msg)
+    isolated remote function onUnsubscriptionValidation(Unsubscription msg)
                 returns UnsubscriptionDeniedError? {
         if (msg.hubTopic == "test1") {
             return error UnsubscriptionDeniedError("Denied subscription for topic 'test1'");
@@ -119,7 +115,7 @@ service /websubhub on functionWithArgumentsListener {
         return ();
     }
 
-    remote function onUnsubscriptionIntentVerified(VerifiedUnsubscription msg){
+    isolated remote function onUnsubscriptionIntentVerified(VerifiedUnsubscription msg){
         io:println("Unsubscription Intent verified invoked!");
     }
 }
@@ -130,14 +126,9 @@ service /websubhub on functionWithArgumentsListener {
 function testFailurePost() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=register123&hub.topic=test", "application/x-www-form-urlencoded");
-
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 400);
-        test:assertEquals(response.getTextPayload(), "The request does not include valid `hub.mode` form param.");
-    } else {
-        test:assertFail("Malformed request was successful");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 400);
+    test:assertEquals(response.getTextPayload(), "The request does not include valid `hub.mode` form param.");
 }
 
 @test:Config {
@@ -145,15 +136,10 @@ function testFailurePost() returns @tainted error? {
 function testRegistrationSuccess() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=register&hub.topic=test", "application/x-www-form-urlencoded");
-
     string expectedPayload = "hub.mode=accepted&isSuccess=true";
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 200);
-        test:assertEquals(response.getTextPayload(), expectedPayload);
-    } else {
-        test:assertFail("Registration test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 200);
+    test:assertEquals(response.getTextPayload(), expectedPayload);
 }
 
 @test:Config {
@@ -161,15 +147,10 @@ function testRegistrationSuccess() returns @tainted error? {
 function testRegistrationFailure() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=register&hub.topic=test1", "application/x-www-form-urlencoded");
-
     string expectedPayload = "hub.mode=denied&hub.reason=Registration Failed!";
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 200);
-        test:assertEquals(response.getTextPayload(), expectedPayload);
-    } else {
-        test:assertFail("Registration test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 200);
+    test:assertEquals(response.getTextPayload(), expectedPayload);
 }
 
 @test:Config {
@@ -177,15 +158,10 @@ function testRegistrationFailure() returns @tainted error? {
 function testDeregistrationSuccess() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=deregister&hub.topic=test", "application/x-www-form-urlencoded");
-
     string expectedPayload = "hub.mode=accepted&isDeregisterSuccess=true";
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 200);
-        test:assertEquals(response.getTextPayload(), expectedPayload);
-    } else {
-        test:assertFail("Deregistration test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 200);
+    test:assertEquals(response.getTextPayload(), expectedPayload);
 }
 
 @test:Config {
@@ -193,56 +169,10 @@ function testDeregistrationSuccess() returns @tainted error? {
 function testDeregistrationFailure() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=deregister&hub.topic=test1", "application/x-www-form-urlencoded");
-
     string expectedPayload = "hub.mode=denied&hub.reason=Topic Deregistration Failed!";
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 200);
-        test:assertEquals(response.getTextPayload(), expectedPayload);
-    } else {
-        test:assertFail("Deregistration test failed");
-    }
-}
-
-service /subscriber on new http:Listener(9091) {
-
-    resource function get .(http:Caller caller, http:Request req)
-            returns error? {
-        map<string[]> payload = req.getQueryParams();
-        string[] hubMode = <string[]> payload["hub.mode"];
-        if (hubMode[0] == "denied") {
-            io:println("Subscriber Validation failed get", payload);
-            isValidationFailed = true;
-            check caller->respond("");
-        } else {
-            string[] challengeArray = <string[]> payload["hub.challenge"];
-            check caller->respond(challengeArray[0]);
-        }
-    }
-
-    resource function post .(http:Caller caller, http:Request req)
-            returns error? {
-        check caller->respond();
-    }
-
-    resource function get unsubscribe(http:Caller caller, http:Request req)
-            returns error? {
-        map<string[]> payload = req.getQueryParams();
-        string[] hubMode = <string[]> payload["hub.mode"];
-        if (hubMode[0] == "denied") {
-            io:println("Unsubscription Validation failed get", payload);
-            isValidationFailed = true;
-            check caller->respond("");
-        } else {
-            string[] challengeArray = <string[]> payload["hub.challenge"];
-            check caller->respond(challengeArray[0]);
-        }
-    }
-
-    resource function post unsubscribe(http:Caller caller, http:Request req)
-            returns error? {
-        check caller->respond();
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 200);
+    test:assertEquals(response.getTextPayload(), expectedPayload);
 }
 
 @test:Config {
@@ -251,13 +181,8 @@ function testSubscriptionFailure() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=subscribe&hub.topic=test2&hub.callback=http://localhost:9091/subscriber", 
                             "application/x-www-form-urlencoded");
-
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 400);
-    } else {
-        test:assertFail("Deregistration test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 400);
 }
 
 @test:Config {
@@ -266,15 +191,8 @@ function testSubscriptionValidationFailure() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=subscribe&hub.topic=test1&hub.callback=http://localhost:9091/subscriber", 
                             "application/x-www-form-urlencoded");
-
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 202);
-        // todo Validate post request invoked, as of now manually checked through logs
-        // test:assertEquals(isValidationFailed, true);
-    } else {
-        test:assertFail("Deregistration test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 202);
 }
 
 @test:Config {
@@ -284,14 +202,18 @@ function testSubscriptionIntentVerification() returns @tainted error? {
     request.setTextPayload("hub.mode=subscribe&hub.topic=test&hub.callback=http://localhost:9091/subscriber", 
                             "application/x-www-form-urlencoded");
 
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 202);
-        // todo Validate post request invoked, as of now manually checked through logs
-        // test:assertEquals(isIntentVerified, true);
-    } else {
-        test:assertFail("Deregistration test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 202);
+}
+
+@test:Config {
+}
+function testSubscriptionWithAdditionalParams() returns @tainted error? {
+    http:Request request = new;
+    request.setTextPayload("hub.mode=subscribe&hub.topic=test&hub.callback=http://localhost:9091/subscriber&param1=value1&param2=value2", 
+                            "application/x-www-form-urlencoded");
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 202);
 }
 
 @test:Config {
@@ -301,12 +223,8 @@ function testUnsubscriptionFailure() returns @tainted error? {
     request.setTextPayload("hub.mode=unsubscribe&hub.topic=test2&hub.callback=http://localhost:9091/subscriber/unsubscribe",
                             "application/x-www-form-urlencoded");
 
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 400);
-    } else {
-        test:assertFail("UnsubscriptionFailure test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 400);
 }
 
 @test:Config {
@@ -315,15 +233,8 @@ function testUnsubscriptionValidationFailure() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=unsubscribe&hub.topic=test1&hub.callback=http://localhost:9091/subscriber/unsubscribe",
                             "application/x-www-form-urlencoded");
-
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 202);
-        // todo Validate post request invoked, as of now manually checked through logs
-        // test:assertEquals(isValidationFailed, true);
-    } else {
-        test:assertFail("Deregistration test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 202);
 }
 
 @test:Config {
@@ -332,15 +243,8 @@ function testUnsubscriptionIntentVerification() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=unsubscribe&hub.topic=test&hub.callback=http://localhost:9091/subscriber/unsubscribe", 
                             "application/x-www-form-urlencoded");
-
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 202);
-        // todo Validate post request invoked, as of now manually checked through logs
-        // test:assertEquals(isIntentVerified, true);
-    } else {
-        test:assertFail("UnsubscriptionIntentVerification test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 202);
 }
 
 @test:Config {
@@ -348,13 +252,8 @@ function testUnsubscriptionIntentVerification() returns @tainted error? {
 function testPublishContent() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=publish&hub.topic=test", "application/x-www-form-urlencoded");
-
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 200);
-    } else {
-        test:assertFail("UnsubscriptionIntentVerification test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 200);
 }
 
 @test:Config {
@@ -362,13 +261,8 @@ function testPublishContent() returns @tainted error? {
 function testPublishContentFailure() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("hub.mode=publish&hub.topic=test1", "application/x-www-form-urlencoded");
-
-    var response = check httpClient->post("/", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 200);
-    } else {
-        test:assertFail("UnsubscriptionIntentVerification test failed");
-    }
+    http:Response response = check httpClient->post("/", request);
+    test:assertEquals(response.statusCode, 200);
 }
 
 @test:Config {
@@ -377,11 +271,6 @@ function testPublishContentLocal() returns @tainted error? {
     http:Request request = new;
     request.setTextPayload("event=event1", "application/x-www-form-urlencoded");
     request.setHeader(BALLERINA_PUBLISH_HEADER, "publish");
-
-    var response = check httpClient->post("/?hub.mode=publish&hub.topic=test", request);
-    if (response is http:Response) {
-        test:assertEquals(response.statusCode, 200);
-    } else {
-        test:assertFail("UnsubscriptionIntentVerification test failed");
-    }
+    http:Response response = check httpClient->post("/?hub.mode=publish&hub.topic=test", request);
+    test:assertEquals(response.statusCode, 200);
 }

@@ -1,22 +1,23 @@
 Ballerina WebSubHub Library
 ===================
 
-  [![Build](https://github.com/ballerina-platform/module-ballerina-websubhub/workflows/Build/badge.svg)](https://github.com/ballerina-platform/module-ballerina-websubhub/actions?query=workflow%3ABuild)
+  [![Build](https://github.com/ballerina-platform/module-ballerina-websubhub/actions/workflows/build-timestamped-master.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerina-websubhub/actions/workflows/build-timestamped-master.yml)
   [![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerina-websubhub.svg)](https://github.com/ballerina-platform/module-ballerina-websubhub/commits/main)
   [![Github issues](https://img.shields.io/github/issues/ballerina-platform/ballerina-standard-library/module/websubhub.svg?label=Open%20Issues)](https://github.com/ballerina-platform/ballerina-standard-library/labels/module%2Fwebsubhub)
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+  [![codecov](https://codecov.io/gh/ballerina-platform/module-ballerina-websubhub/branch/main/graph/badge.svg)](https://codecov.io/gh/ballerina-platform/module-ballerina-websubhub) 
 
-The WebSubHub library is one of the standard library modules of the<a target="_blank" href="https://ballerina.io/"> Ballerina</a> language.
+The WebSubHub package is one of the standard library packages of the <a target="_blank" href="https://ballerina.io/">Ballerina</a> language.
 
-This library provides the capability to easily introduce publishers and hub that are WebSub-compliant. The ballerina/websubhub library comes with an in-built WebSub Hub service, which can be brought up by publishers that need to bring up a hub.
+This package provides the capability to easily implement a WebSub compliant **Hub Service**.
 
-For example demonstrations of the usage, go to [Ballerina By Examples](https://ballerina.io/swan-lake/learn/by-example/websub-internal-hub-sample.html).
-
+ For more information, go to [The WebSub Hub Module](https://ballerina.io/learn/api-docs/ballerina/websubhub/index.html).
+ 
 ## Issues and Projects
 
 Issues and Projects tabs are disabled for this repository as this is part of the Ballerina Standard Library. To report bugs, request new features, start new discussions, view project boards, etc. please visit Ballerina Standard Library [parent repository](https://github.com/ballerina-platform/ballerina-standard-library).
 
-This repository only contains the source code for the module.
+This repository only contains the source code for the package.
 
 ## Building from the Source
 
@@ -34,17 +35,39 @@ This repository only contains the source code for the module.
 
 Execute the commands below to build from source.
 
-1. To build the library:
+1. To build the package:
         
         ./gradlew clean build
 
-1. To build the module without the tests:
-
+2. To build the package without the tests:
+```
         ./gradlew clean build -x test
+```
 
-1. To debug the tests:
+1. To debug the package tests:
+3. To debug the package tests:
 
         ./gradlew clean build -Pdebug=<port>
+
+4. To run a group of tests
+    ```
+    ./gradlew clean test -Pgroups=<test_group_names>
+    ```
+
+5. To debug with Ballerina language:
+    ```
+    ./gradlew clean build -PbalJavaDebug=<port>
+    ```
+
+6. Publish the generated artifacts to the local Ballerina central repository:
+    ```
+    ./gradlew clean build -PpublishToLocalCentral=true
+    ```
+
+7. Publish the generated artifacts to the Ballerina central repository:
+    ```
+    ./gradlew clean build -PpublishToCentral=true
+    ```
 
 ## Contributing to Ballerina
 
