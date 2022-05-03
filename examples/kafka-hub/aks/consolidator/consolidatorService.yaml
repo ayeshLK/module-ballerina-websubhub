@@ -1,0 +1,80 @@
+---
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  name: "config-config-map"
+data:
+  Config.toml: "[consolidatorService.config]\n# IP and Port of the Kafka bootstrap\
+    \ node\nKAFKA_BOOTSTRAP_NODE = \"172.17.0.12:9092\"\n\n# Kafka topic which will\
+    \ get notified for websub topic registration/deregistration\n# All the hubs must\
+    \ be pointed to the same Kafka topic to notify websub topic registration/deregistration\n\
+    REGISTERED_WEBSUB_TOPICS_TOPIC = \"registered-websub-topics\"\n\n# Kafka topic\
+    \ which stores consolidated websub topics for the hub\nCONSOLIDATED_WEBSUB_TOPICS_TOPIC\
+    \ = \"consolidated-websub-topics\"\n\n# Kafka topic which will get notified for\
+    \ websub subscription/unsubscription\n# All the hubs must be pointed to the same\
+    \ Kafka topic to notify websub subscription/unsubscription\nWEBSUB_SUBSCRIBERS_TOPIC\
+    \ = \"registered-websub-subscribers\"\n\n# Kafka topic which is stores consolidated\
+    \ websub subscribers for this server\nCONSOLIDATED_WEBSUB_SUBSCRIBERS_TOPIC =\
+    \ \"consolidated-websub-subscribers\"\n\n# The interval in which Kafka consumers\
+    \ wait for new messages\nPOLLING_INTERVAL = 10.0\n\n# The period in which Kafka\
+    \ close method waits to complete\nGRACEFUL_CLOSE_PERIOD = 5.0\n"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  labels:
+    app: "consolidatorService"
+  name: "consolidatorser-deployment"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "consolidatorService"
+  template:
+    metadata:
+      labels:
+        app: "consolidatorService"
+    spec:
+      containers:
+      - env:
+        - name: "BAL_CONFIG_FILES"
+          value: "/home/ballerina/conf/Config.toml:"
+        image: "websubazurehub.azurecr.io/consolidator:v1"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "sleep"
+              - "15"
+        name: "consolidatorser-deployment"
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "100Mi"
+            cpu: "200m"
+        volumeMounts:
+        - mountPath: "/home/ballerina/conf/"
+          name: "config-config-map-volume"
+          readOnly: false
+      nodeSelector: {}
+      volumes:
+      - configMap:
+          name: "config-config-map"
+        name: "config-config-map-volume"
+---
+apiVersion: "autoscaling/v1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  labels:
+    app: "consolidatorService"
+  name: "consolidatorser"
+spec:
+  maxReplicas: 2
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: "apps/v1"
+    kind: "Deployment"
+    name: "consolidatorser-deployment"
+  targetCPUUtilizationPercentage: 50

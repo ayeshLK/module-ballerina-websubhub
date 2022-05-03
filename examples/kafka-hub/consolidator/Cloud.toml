@@ -1,5 +1,5 @@
 [container.image]
-repository="ayeshalm"
+repository="websubazurehub.azurecr.io"
 name="consolidator"
 tag="v1"
 

@@ -1,0 +1,17 @@
+apiVersion: "apps/v1"
+kind: Deployment
+metadata:
+  name: no-name
+spec:
+  template:
+    metadata:
+      labels:
+        logs: "true"
+    spec:
+      containers:
+        - name: "kafkahub-deployment"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9000
+              name: "port-1-in-mem"
+              protocol: "TCP"
