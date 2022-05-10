@@ -1,0 +1,17 @@
+apiVersion: "apps/v1"
+kind: Deployment
+metadata:
+  name: no-name
+spec:
+  template:
+    metadata:
+      labels:
+        logs: "true"
+    spec:
+      containers:
+        - name: "samplesubscribe-deployment"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9100
+              name: "port-1-in-mem"
+              protocol: "TCP"

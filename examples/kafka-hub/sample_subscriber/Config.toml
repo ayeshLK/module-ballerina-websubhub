@@ -1,0 +1,5 @@
+# URL of the `hub`
+HUB_URL = "http://localhost:9000/hub"
+
+# `callback URL` for the `websub:SubscriberService`
+CALLBACK = "http://localhost:9100/subscriber"
