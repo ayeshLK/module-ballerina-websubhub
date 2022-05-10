@@ -1,0 +1,11 @@
+[container.image]
+repository="websubazurehub.azurecr.io"
+name = "samplepublisher"
+tag="v1"
+
+[[container.copy.files]]
+sourceFile="./Config.toml"
+target="/home/ballerina/Config.toml"
+
+[[cloud.config.files]]
+file="./Config.toml"
