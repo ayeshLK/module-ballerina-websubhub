@@ -29,8 +29,12 @@ final readonly & json PAYLOAD = {
 };
 
 public function main() returns error? {
-    websubhub:TopicRegistrationSuccess registrationResponse = check publisherClient->registerTopic(TOPIC);
-    log:printInfo("Received topic-registration response", payload = registrationResponse);
+    websubhub:TopicRegistrationSuccess|websubhub:TopicRegistrationError registrationResponse = publisherClient->registerTopic(TOPIC);
+    if registrationResponse is websubhub:TopicRegistrationError {
+        log:printError("Error occurred while registering the topic", 'error = registrationResponse, details = registrationResponse.message());
+    } else {
+        log:printInfo("Received topic-registration response", payload = registrationResponse);
+    }
     _ = @strand {thread: "any"} start publishContent();
 }
 
