@@ -18,11 +18,11 @@ import ballerina/websubhub;
 import ballerina/lang.runtime;
 import ballerina/log;
 
-configurable string HUB_URL = "http://websubhub.privatelink.websubhub:9000/hub";
+configurable string HUB_URL = "http://websubhub.privatelink.websubhub.io:80/hub";
 
 final websubhub:PublisherClient publisherClient = check new(HUB_URL);
 
-final string TOPIC = "test";
+final string TOPIC = "ASGARDEO_EVENTS";
 final readonly & json PAYLOAD = {
     "type": "Message",
     "content": "Sample Text Message"

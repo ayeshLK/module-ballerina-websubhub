@@ -17,10 +17,10 @@
 import ballerina/log;
 import ballerina/websub;
 
-configurable string HUB_URL = "http://websubhub.privatelink.websubhub:9000/hub";
-configurable string CALLBACK = "http://localhost:9100/subscriber";
+configurable string HUB_URL = "http://websubhub.privatelink.websubhub.io:80/hub";
+configurable string CALLBACK = "http://choreo.websubhub.io:80/subscriber";
 
-final string TOPIC = "test";
+final string TOPIC = "ASGARDEO_EVENTS";
 
 @websub:SubscriberServiceConfig {
     target: [HUB_URL, TOPIC],

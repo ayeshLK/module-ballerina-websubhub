@@ -1,2 +1,2 @@
 # URL of the `hub`
-HUB_URL = "http://localhost:9000/hub"
+HUB_URL = "http://websubhub.privatelink.websubhub.io:80/hub"
