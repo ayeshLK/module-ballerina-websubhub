@@ -18,7 +18,7 @@ import ballerina/websubhub;
 import ballerina/lang.runtime;
 import ballerina/log;
 
-configurable string HUB_URL = "http://localhost:9000/hub";
+configurable string HUB_URL = "http://websubhub.privatelink.websubhub:9000/hub";
 
 final websubhub:PublisherClient publisherClient = check new(HUB_URL);
 

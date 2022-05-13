@@ -17,7 +17,7 @@
 import ballerina/log;
 import ballerina/websub;
 
-configurable string HUB_URL = "http://localhost:9000/hub";
+configurable string HUB_URL = "http://websubhub.privatelink.websubhub:9000/hub";
 configurable string CALLBACK = "http://localhost:9100/subscriber";
 
 final string TOPIC = "test";
