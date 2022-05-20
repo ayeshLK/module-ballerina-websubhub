@@ -1,7 +1,7 @@
 [container.image]
 repository="websubazurehub.azurecr.io"
 name="kafkahub"
-tag="v1"
+tag="v2"
 
 # [[container.copy.files]]
 # sourceFile="./resources/server.crt"
