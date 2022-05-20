@@ -172,10 +172,7 @@ function startMissingSubscribers(websubhub:VerifiedSubscription[] persistedSubsc
                     backOffFactor: 2.0,
                     maxWaitInterval: 20
                 },
-                timeout: config:MESSAGE_DELIVERY_TIMEOUT,
-                secureSocket: {
-                    cert: "./resources/server.crt"
-                }
+                timeout: config:MESSAGE_DELIVERY_TIMEOUT
             });
             _ = @strand { thread: "any" } start pollForNewUpdates(hubClientEp, consumerEp, topicName, subscriberId);
         }
