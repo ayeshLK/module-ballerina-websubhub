@@ -47,7 +47,7 @@ spec:
       - env:
         - name: "BAL_CONFIG_FILES"
           value: "/home/ballerina/conf/Config.toml:"
-        image: "websubazurehub.azurecr.io/kafkahub:v1"
+        image: "websubazurehub.azurecr.io/kafkahub:v2"
         lifecycle:
           preStop:
             exec:
