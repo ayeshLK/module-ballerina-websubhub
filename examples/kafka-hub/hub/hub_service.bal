@@ -32,7 +32,9 @@ http:Service healthCheckService = service object {
     }
 };
 
-websubhub:Service hubService = service object {
+websubhub:Service hubService = @websubhub:ServiceConfig {
+    autoVerifySubscriptionIntent: true
+} service object {
 
     # Registers a `topic` in the hub.
     # 
@@ -94,13 +96,15 @@ websubhub:Service hubService = service object {
     # 
     # + message - Details of the subscription
     # + headers - `http:Headers` of the original `http:Request`
+    # + hubController - `websubhub:Controller` used to mark subscriptions as verified
     # + return - `websubhub:SubscriptionAccepted` if subscription is accepted from the hub, `websubhub:BadSubscriptionError`
     #            if subscription is denied from the hub or `error` if there is any unexpected error
-    isolated remote function onSubscription(websubhub:Subscription message, http:Headers headers)
+    isolated remote function onSubscription(websubhub:Subscription message, http:Headers headers, websubhub:Controller hubController)
                 returns websubhub:SubscriptionAccepted|websubhub:BadSubscriptionError|error {
         if config:SECURITY_ON {
             check security:authorize(headers, ["subscribe"]);
         }
+        check hubController.markAsVerified(message);
         return websubhub:SUBSCRIPTION_ACCEPTED;
     }
 
@@ -148,13 +152,15 @@ websubhub:Service hubService = service object {
     # 
     # + message - Details of the unsubscription
     # + headers - `http:Headers` of the original `http:Request`
+    # + hubController - `websubhub:Controller` used to mark subscriptions as verified
     # + return - `websubhub:UnsubscriptionAccepted` if unsubscription is accepted from the hub, `websubhub:BadUnsubscriptionError`
     #            if unsubscription is denied from the hub or `error` if there is any unexpected error
-    isolated remote function onUnsubscription(websubhub:Unsubscription message, http:Headers headers)
+    isolated remote function onUnsubscription(websubhub:Unsubscription message, http:Headers headers, websubhub:Controller hubController)
                returns websubhub:UnsubscriptionAccepted|websubhub:BadUnsubscriptionError|error {
         if config:SECURITY_ON {
             check security:authorize(headers, ["subscribe"]);
         }
+        check hubController.markAsVerified(message);
         return websubhub:UNSUBSCRIPTION_ACCEPTED;
     }
 
