@@ -24,6 +24,7 @@ final string topicName = os:getEnv("TOPIC_NAME") == "" ? "priceUpdate" : os:getE
 final string hubUrl = os:getEnv("HUB_URL") == "" ? "https://lb:9090/hub" : os:getEnv("HUB_URL");
 final boolean unsubOnShutdown = os:getEnv("UNSUB_ON_SHUTDOWN") == "true";
 final boolean logHeaders = os:getEnv("LOG_HEADERS") == "true";
+final string? callback = os:getEnv("CALLBACK_URL") == "" ? (): os:getEnv("CALLBACK_URL");
 
 type OAuth2Config record {|
     string tokenUrl;
@@ -94,7 +95,8 @@ function init() returns error? {
         }
     },
     unsubscribeOnShutdown: unsubOnShutdown,
-    customParams: getCustomParams()
+    customParams: getCustomParams(),
+    callback
 }
 service /JuApTOXq19 on securedSubscriber {
 

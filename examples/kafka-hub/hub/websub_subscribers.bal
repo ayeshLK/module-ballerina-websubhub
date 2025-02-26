@@ -117,6 +117,7 @@ isolated function notifySubscribers(kafka:Consumer consumerEp, kafka:BytesConsum
         future<websubhub:ContentDistributionSuccess|error>[] distributionResponses = [];
         foreach var kafkaRecord in records {
             websubhub:ContentDistributionMessage message = check deSerializeKafkaRecord(kafkaRecord);
+            log:printInfo("Publishing messages to the subscriber", payload = message.toString());
             future<websubhub:ContentDistributionSuccess|error> distributionResponse = start clientEp->notifyContentDistribution(message.cloneReadOnly());
             distributionResponses.push(distributionResponse);
         }
@@ -124,7 +125,7 @@ isolated function notifySubscribers(kafka:Consumer consumerEp, kafka:BytesConsum
         boolean hasErrors = distributionResponses
             .'map(f => waitAndGetResult(f))
             .'map(r => r is error)
-            .reduce(isolated function (boolean a, boolean b) returns boolean => a && b, false);
+            .reduce(isolated function (boolean a, boolean b) returns boolean => a || b, false);
         
         if hasErrors {
             return error("Error occurred while distributing content to the subscriber");
@@ -137,6 +138,9 @@ isolated function notifySubscribers(kafka:Consumer consumerEp, kafka:BytesConsum
 
 isolated function waitAndGetResult(future<websubhub:ContentDistributionSuccess|error> response) returns websubhub:ContentDistributionSuccess|error {
     websubhub:ContentDistributionSuccess|error responseValue = wait response;
+    if responseValue is error {
+        util:logError("Error occurred while distributing content", responseValue);
+    }
     return responseValue;
 }
 

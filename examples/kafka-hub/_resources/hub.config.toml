@@ -60,5 +60,11 @@ cert.password = "password"
 key.keyStore.path = "./resources/brokercerts/client-keystore.jks"
 key.keyStore.password = "password"
 
+[ballerina.http.accessLogConfig] 
+console = false
+
+[ballerina.http.traceLogAdvancedConfig]
+console = false
+
 [ballerina.log]
 level = "DEBUG"
