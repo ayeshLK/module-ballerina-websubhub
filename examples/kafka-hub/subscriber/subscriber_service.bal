@@ -25,6 +25,7 @@ final string hubUrl = os:getEnv("HUB_URL") == "" ? "https://lb:9090/hub" : os:ge
 final boolean unsubOnShutdown = os:getEnv("UNSUB_ON_SHUTDOWN") == "true";
 final boolean logHeaders = os:getEnv("LOG_HEADERS") == "true";
 final string? callback = os:getEnv("CALLBACK_URL") == "" ? (): os:getEnv("CALLBACK_URL");
+final string? secret = os:getEnv("SECRET") == "" ? (): os:getEnv("SECRET");
 
 type OAuth2Config record {|
     string tokenUrl;
@@ -96,7 +97,8 @@ function init() returns error? {
     },
     unsubscribeOnShutdown: unsubOnShutdown,
     customParams: getCustomParams(),
-    callback
+    callback,
+    secret
 }
 service /JuApTOXq19 on securedSubscriber {
 
