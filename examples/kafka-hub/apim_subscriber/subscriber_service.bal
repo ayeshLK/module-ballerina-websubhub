@@ -16,11 +16,16 @@
 
 import ballerina/websub;
 import ballerina/log;
+import ballerina/os;
 
-configurable string topicName = "priceUpdate";
-configurable string hubUrl = "https://localhost:9090";
-configurable boolean logHeaders = false;
-configurable string token = "testtoken";
+final string topicName = os:getEnv("TOPIC_NAME") == "" ? "priceUpdate" : os:getEnv("TOPIC_NAME");
+final string hubUrl = os:getEnv("HUB_URL") == "" ? "https://lb:9090/hub" : os:getEnv("HUB_URL");
+final boolean unsubOnShutdown = os:getEnv("UNSUB_ON_SHUTDOWN") == "true";
+final string? callback = os:getEnv("CALLBACK_URL") == "" ? (): os:getEnv("CALLBACK_URL");
+final string? secret = os:getEnv("SECRET") == "" ? (): os:getEnv("SECRET");
+final string token = os:getEnv("AUTH_TOKEN") == "" ? "testtoken" : os:getEnv("AUTH_TOKEN");
+
+listener websub:Listener securedSubscriber = getListener();
 
 @websub:SubscriberServiceConfig {
     target: [hubUrl, topicName],
@@ -34,7 +39,7 @@ configurable string token = "testtoken";
     },
     unsubscribeOnShutdown: true
 }
-service /JuApTOXq19 on new websub:Listener(10010) {
+service /JuApTOXq19 on securedSubscriber {
     remote function onSubscriptionVerification(websub:SubscriptionVerification msg)
         returns websub:SubscriptionVerificationSuccess {
         log:printInfo(string `Successfully subscribed for notifications on topic [${topicName}]`);
@@ -44,12 +49,13 @@ service /JuApTOXq19 on new websub:Listener(10010) {
     remote function onEventNotification(websub:ContentDistributionMessage event) returns error? {
         json notification = check event.content.ensureType();
         log:printInfo("Received notification", content = notification);
-        if logHeaders {
-            map<string|string[]>? receivedHeaders = event.headers;
-            if receivedHeaders is () {
-                return;
-            }
-            log:printInfo("Received headers: ", headers = receivedHeaders);
-        }
     }    
 }
+
+isolated function getListener() returns websub:Listener|error {
+    if os:getEnv("SVC_PORT") == "" {
+        return new (10010, host = os:getEnv("HOSTNAME"));
+    }
+    return new (check int:fromString(os:getEnv("SVC_PORT")), host = os:getEnv("HOSTNAME"));
+}
+

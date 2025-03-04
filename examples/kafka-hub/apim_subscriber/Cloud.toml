@@ -1,0 +1,4 @@
+[container.image]
+repository="ballerina"
+name="apimsubscriber"
+tag="1.0.0"

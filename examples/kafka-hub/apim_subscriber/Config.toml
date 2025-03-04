@@ -1,4 +1,0 @@
-topicName = "topic-1"
-hubUrl = "https://localhost:8243/kafkahub-webhook/1.0.0"
-logHeaders = false
-token = "token"
