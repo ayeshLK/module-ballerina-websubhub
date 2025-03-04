@@ -236,3 +236,23 @@ Provide a unique name for `Service Provider Name` and click Register.
 - Select Enable Audience Restriction and add `ballerina` as an audience.
 Select JWT as the Token Issuer and click Add.
 Copy OAuth Client Key and OAuth Client Secret which is used in configuring WebSub Publisher and Subscriber.
+
+## Integrating with WSO2 APIM
+
+To register the APIM subscriber run the following command.
+
+```sh
+docker run --rm -e TOPIC_NAME="<topic-name>" -e CONSUMER_GROUP="<consumer-group>" -e HUB_URL="<hub-url>" -e UNSUB_ON_SHUTDOWN="true" -e CALLBACK_URL="<APIM-subscriber-callback>" -e SECRET="<APIM-subscriber-secret>" --network="kafkahub_hub_network" --hostname=sub1 ballerina/wbsbsubscriber:6.0.0
+```
+
+To publish content to the `hub` run the following command.
+
+```sh
+docker run --rm --network="kafkahub_hub_network" -e TOPIC_NAME="<topic-name>" -e HUB_URL="<hub-url>" ayeshalmeida/wbsbpublisher:4.0.0
+```
+
+To register a subscriber in the APIM side, run the following command.
+
+```sh
+docker run --rm --network="kafkahub_hub_network" --hostname=apimsub ballerina/apimsubscriber:1.0.0
+```
