@@ -62,10 +62,10 @@ isolated function receiveMessagesFromKafka(int consumerIdx) returns error? {
     while true {
         readonly & kafka:BytesConsumerRecord[] records = check kafkaConsumer->poll(10);
         counter += records.length();
-        if scheduledForShutdown {
-            break;
-        }
         if records.length() == 0 {
+            if scheduledForShutdown {
+                break;
+            }
             runtime:sleep(10);
             scheduledForShutdown = true;
         }
